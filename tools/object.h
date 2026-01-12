@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include "wastring.h"
 #define object void *
 #define object_ptr object *
 typedef enum obj_type
@@ -12,7 +13,8 @@ typedef enum obj_type
     INTEGER,
     FLOAT,
     DOUBLE,
-    STRING
+    STRING,
+    WASTRING
 } obj_type;
 typedef union value
 {
@@ -21,6 +23,7 @@ typedef union value
     float i_float;
     double i_double;
     char *i_string;
+    str_ptr i_wastring;
 } value;
 const char type_name[][10] = {
     "none",
@@ -28,7 +31,9 @@ const char type_name[][10] = {
     "integer",
     "float",
     "double",
-    "string"};
+    "string",
+    "wastring"
+};
 typedef struct Object
 {
     object data;
@@ -57,6 +62,10 @@ Obj_ptr create_object_double();
 void set_object_double(Obj_ptr obj_ptr, double value);
 double get_object_double(Obj_ptr obj_ptr);
 Obj_ptr create_object_char_ptr();
+Obj_ptr create_object_wastring();
+void set_object_wastring(Obj_ptr obj_ptr, str_ptr str);
+void set_object_wastring_char_ptr(Obj_ptr, const char* str);
+str_ptr get_object_wastring(Obj_ptr obj_ptr);
 void set_object_char_ptr(Obj_ptr obj_ptr, const char *value);
 const char *get_object_char_ptr(Obj_ptr obj_ptr);
 void set_object_int_wrap(Obj_ptr obj_ptr, void *data);
@@ -65,6 +74,8 @@ void set_object_double_wrap(Obj_ptr obj_ptr, void *data);
 void set_object_char_wrap(Obj_ptr obj_ptr, void *data);
 void set_object_char_ptr_wrap(Obj_ptr obj_ptr, void *data);
 int cmp_object_value(Obj_ptr obj_ptr, void *data);
+const char* obj_to_string(Obj_ptr obj_ptr);
+
 
 Obj_ptr create_object_int()
 {
@@ -248,6 +259,8 @@ const char *get_object_type(Obj_ptr obj_ptr)
         return type_name[CHAR];
     case STRING:
         return type_name[STRING];
+    case WASTRING:
+        return type_name[WASTRING];
     default:
         return type_name[NONE];
     }
@@ -308,6 +321,11 @@ value get_object_value(Obj_ptr obj_ptr)
         val.i_string = (char *)malloc(sizeof(char) * obj_ptr->buffer_size);
         strcpy_s(val.i_string, obj_ptr->buffer_size, get_object_char_ptr(obj_ptr));
         break;
+     case WASTRING:
+        if(val.i_wastring)
+            destroy_wastring(&val.i_wastring);
+        val.i_wastring = create_wastring_initstr(get_object_wastring(obj_ptr)->data);
+        break;
     default:
         break;
     }
@@ -353,6 +371,9 @@ void printf_object_value(const char *format, va_list ap)
                 case STRING:
                     printf("%s", val.i_string);
                     break;
+                case WASTRING:
+                    printf("%s", val.i_wastring->data);
+                    break;
                 default:
                     printf("none");
                     break;
@@ -386,6 +407,9 @@ void printf_object_value(const char *format, va_list ap)
                 case STRING:
                     printf("%s", val.i_string);
                     break;
+                 case WASTRING:
+                    printf("%s", val.i_wastring->data);
+                    break;
                 default:
                     printf("none");
                     break;
@@ -412,6 +436,9 @@ void printf_object_value(const char *format, va_list ap)
                     break;
                 case STRING:
                     printf("%s", val.i_string);
+                    break;
+                 case WASTRING:
+                    printf("%s", val.i_wastring->data);
                     break;
                 default:
                     printf("none");
@@ -477,6 +504,8 @@ void copy_object_value(Obj_ptr dest, Obj_ptr src)
         break;
     case STRING:
         set_object_char_ptr(dest, val.i_string);
+        break;
+    case WASTRING:
         break;
     default:
         break;
@@ -575,6 +604,40 @@ int cmp_object_value(Obj_ptr obj_ptr, void *data)
 
 typedef void (*SETOBJECT)(Obj_ptr obj_ptr, void *data);
 
+
+//待实现,object转字符串
+const char* obj_to_string(Obj_ptr obj_ptr)
+{
+    if(!obj_ptr)return NULL;
+    obj_type type = obj_ptr->type;
+    //value val = get_object_value(obj_ptr);
+    char* res;
+    switch (type)
+    {
+    case CHAR:
+        res = (char*)(malloc(sizeof(char) * 2));
+        *res = get_object_char(obj_ptr);
+        res[1] = '\0';
+        return res;
+        break;
+    case INTEGER:
+        return (char*)double_to_string(get_object_int(obj_ptr));
+        break;
+    case FLOAT:
+        return (char*)double_to_string(get_object_float(obj_ptr));
+        break;
+    case DOUBLE:
+        return (char*)double_to_string(get_object_double(obj_ptr));
+        break;
+    case STRING:
+        return (char*)get_object_char_ptr(obj_ptr);
+        break;
+    default:
+        return NULL;
+        break;
+    }
+}
+
 // 类型-函数指针映射表
 static const SETOBJECT set_object_funcs[] = {
     [INTEGER] = set_object_int_wrap,
@@ -584,4 +647,36 @@ static const SETOBJECT set_object_funcs[] = {
     [STRING] = set_object_char_ptr_wrap};
 
 #define PRINT_OBJECT(format, ...) print_object(format, ##__VA_ARGS__)
+
+
+Obj_ptr create_object_wastring()
+{
+    Obj_ptr obj = create_object();
+    obj->type = WASTRING;
+    obj->data = create_wastring();
+    obj->buffer_size = sizeof(wastring);
+    return obj;
+}
+
+void set_object_wastring(Obj_ptr obj_ptr, str_ptr str)
+{
+    if(!obj_ptr)return;
+    if(obj_ptr->type != WASTRING)free_object(obj_ptr);
+    if(!obj_ptr->data){
+        obj_ptr->data = create_wastring_initstr(str->data);
+        obj_ptr->type = WASTRING;
+        obj_ptr->buffer_size = sizeof(wastring);
+        return;
+    }
+    wa_clear((str_ptr)obj_ptr->data);
+    wa_append((str_ptr)obj_ptr->data, str->data);
+}
+
+str_ptr get_object_wastring(Obj_ptr obj_ptr)
+{
+    if(!obj_ptr)return NULL;
+    return (str_ptr)obj_ptr->data;
+}
+
+
 #endif

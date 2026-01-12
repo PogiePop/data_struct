@@ -48,6 +48,7 @@ int get_value_char_ptr(ay_list list, const char* value);
 
 
 
+
 ay_list create_arraylist(int size){
     ay_list list = (ay_list)malloc(sizeof(arraylist));
     list->capacity = size;
@@ -149,7 +150,7 @@ int insert_char(ay_list list, char value, int index)
 }
 int insert_char_ptr(ay_list list, const char* value, int index)
 {
-    return ay_insert(list, STRING, &value, index);
+    return ay_insert(list, STRING, (void*)value, index);
 }
 
 int delete(ay_list list, int index)
@@ -204,6 +205,8 @@ int get_value_char_ptr(ay_list list, const char* value)
 {
     return get_value(list, STRING, &value);
 }
+
+
 
 
 

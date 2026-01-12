@@ -20,6 +20,7 @@ void push_char_ptr(sk_ptr stack, const char* value);
 void print_stack(sk_ptr stack);
 void sk_pop(sk_ptr stack);
 Obj_ptr sk_top(sk_ptr stack);
+int sk_is_empty(sk_ptr stack);
 
 
 sk_ptr create_stack()
@@ -82,6 +83,10 @@ Obj_ptr sk_top(sk_ptr stack)
 }
 
 
-
+int sk_is_empty(sk_ptr stack)
+{
+    if(!stack || !stack->list || stack->list->size == 0)return TRUE;
+    return FALSE;
+}
 
 #endif

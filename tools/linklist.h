@@ -60,6 +60,8 @@ Obj_ptr lk_get_back(lk_list list);
 void lk_remove(lk_list list, int index);
 void lk_remove_front(lk_list list);
 void lk_remove_back(lk_list list);
+const char* lk_to_string(lk_list list);
+int lk_get_buffer_size(lk_list list);
 
 
 lk_node create_linknode()
@@ -293,5 +295,54 @@ Obj_ptr lk_get_front(lk_list list)
 Obj_ptr lk_get_back(lk_list list)
 {
     return lk_get(list, list->size - 1);
+}
+
+
+const char* lk_to_string(lk_list list)
+{
+    if(!list || list->size == 0)return NULL;
+    lk_node move = list->head->next;
+    int size = 0;
+    int *data_size = malloc(sizeof(int) * list->size);
+    int index = 0;
+    while(move != list->head)
+    {
+        int s = (int)strlen(obj_to_string(move->data));
+        size += s;
+        data_size[index++] = s; 
+        move = move->next;
+    }
+    size++;
+    char* res = (char*)malloc(sizeof(char) * size);
+    if(!res)return NULL;
+    memset(res, 0, size);
+    move = list->head->next;
+    index = 0;
+    int sum_idx = 0;
+     while(move != list->head)
+    {
+        char* s =  (char*)obj_to_string(move->data);
+        strcpy_s(res, strlen(s) + 1, s);
+        res += data_size[index];
+        sum_idx += data_size[index++];
+        move = move->next;
+    }
+    res -= sum_idx;
+    return res;
+}
+
+
+int lk_get_buffer_size(lk_list list)
+{
+     if(!list || list->size == 0)return 0;
+    lk_node move = list->head->next;
+    int size = 0;
+     while(move != list->head)
+    {
+        int s = (int)strlen(obj_to_string(move->data));
+        size += s;
+        move = move->next;
+    }
+    return size + 1;
 }
 #endif
