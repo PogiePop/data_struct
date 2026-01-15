@@ -42,6 +42,7 @@ void destroy_wastring(str_ptr_ptr string_ptr);
 void wa_append(str_ptr str, const char* value);
 void wa_append_char(str_ptr str, char value);
 void wa_erase(str_ptr str, int index);
+void wa_erase_str(str_ptr str, str_ptr e_sub);
 void wa_copy_str(str_ptr des, str_ptr src);
 void wa_clear(str_ptr str);
 int wa_resize(str_ptr str);
@@ -198,18 +199,19 @@ int wa_index_substr_fast(str_ptr str, str_ptr substr)
 {
     if(!str || !substr)return -1;
     int *next = wa_get_next(substr);
-    if(!next)return 0;
+    if(!next)return -1;
     int i = 0, j = 0;
-    while(i < str->size && j < substr->size)
+    while(i < (int)str->size && j < (int)substr->size)
     {
         if(j == -1 || str->data[i] == substr->data[j]){
             ++i;++j;
         }else{
-            //由于计算的next数组是从下标为1开始的所以+1转换到对应值+1
+            //由于计算的next数组是从下标为1开始的所以+1转换到对应值-1
             j = next[j + 1] - 1;
         }
     }
     free(next);
+    next = NULL;
     if(j == substr->size)return i - j;
     return -1;
 }
@@ -240,6 +242,20 @@ void wa_erase(str_ptr str, int index)
     if(!str || index < 0 || index >= str->size)return;
     for(int i = index; i < str->size - 1; i++)str->data[i] = str->data[i + 1];
     str->data[str->size - 1] = '\0';
+}
+
+
+void wa_erase_str(str_ptr str, str_ptr e_sub)
+{
+    if(!str || !e_sub)return;
+    int start = wa_index_substr_fast(str, e_sub);
+    if(start == -1)return;
+    int len = (int)e_sub->size;
+    int k = (int)str->size - (start + len);
+    for(int i = 0; i < k; i++)str->data[start + i] = str->data[start + len + i];
+    int resize = (int)str->size - len;
+    memset(str->data + resize, 0, str->capacity);
+    str->size = resize;
 }
 
 const char *double_to_string(double num)
