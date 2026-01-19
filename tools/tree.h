@@ -53,7 +53,209 @@ int wa_count_node_totals(wa_tree tr);
 int wa_count_leaf_totals_t(t_node node);
 int wa_count_leaf_totals(wa_tree tr);
 
+int wa_bst_insert(wa_tree tr, int value);
 
+int wa_bst_insert_arr(wa_tree tr, int* arr, int size);
+int wa_bst_remove_value_int(wa_tree tr, int value);
+int wa_bst_remove_value_t(t_node pre, t_node node);
+int wa_bst_remove_value_t_root(t_node_ptr node_pre);
+
+int wa_bst_non_remove_value_int(wa_tree tr, int value);
+int wa_bst_non_remove_root(t_node_ptr node_ptr);
+int wa_bst_non_remove_value_t(t_node father, t_node node);
+
+/// @brief 
+/// @param tr 二叉排序树
+/// @param value 想要删除的值
+/// @return 0表示删除失败, 1表示删除成功
+/// @note 1.如果删除的是叶子节点则直接删除,
+/// @note 2.如果删除的节点有左子树或者右子树, 则将左子树或者右子树提上来,
+/// @note 3.如果删除的节点既有左子树也有右子树, 则将对应的前驱或后继提上来, 改为删除前驱或后继
+int wa_bst_remove_value_int(wa_tree tr, int value)
+{
+    if(!tr)return 0;
+    t_node move = tr->root;
+    t_node pre = NULL;
+    while(move)
+    {
+        int v = get_object_int(move->data);
+        if(v == value)break;
+        else if(v > value)
+        {
+            pre = move;
+            move = move->left;
+        }
+        else
+        {
+            pre = move;
+            move = move->right;
+        }
+    }
+    if(!move)return 0;
+    int res = 0;
+    if(!pre)res = wa_bst_remove_value_t_root(&tr->root);
+    else res = wa_bst_remove_value_t(pre, move);
+    return res;
+}
+
+int wa_bst_remove_value_t_root(t_node_ptr node_ptr)
+{
+    if(!node_ptr || !(*node_ptr))return 0;
+    t_node node = *node_ptr;
+    if(!node->left && !node->right)
+    {
+        destory_treenode(node_ptr);
+        return 1;
+    }
+    else if(node->left && node->right)
+    {
+        //中序遍历node的前驱
+        t_node m_pre = node->left;
+        //m_pre的父节点
+        t_node m_pre_pt = node;
+        while(m_pre)
+        {
+            if(!m_pre->right)break;
+            m_pre_pt = m_pre;
+            m_pre = m_pre->right;
+        }
+        copy_object_value(m_pre_pt->data, m_pre->data);
+        wa_bst_remove_value_t(m_pre_pt, m_pre);
+    }
+    else
+    {
+        if(node->left)
+        {
+            //中序遍历node的前驱
+            t_node m_pre = node->left;
+            //m_pre的父节点
+            t_node m_pre_pt = node;
+            while(m_pre)
+            {
+                if(!m_pre->right)break;
+                m_pre_pt = m_pre;
+                m_pre = m_pre->right;
+            }
+            copy_object_value(m_pre_pt->data, m_pre->data);
+            wa_bst_remove_value_t(m_pre_pt, m_pre);
+        }
+        else
+        {
+            //中序遍历node的前驱
+            t_node m_pre = node->right;
+            //m_pre的父节点
+            t_node m_pre_pt = node;
+            while(m_pre)
+            {
+                if(!m_pre->left)break;
+                m_pre_pt = m_pre;
+                m_pre = m_pre->left;
+            }
+            copy_object_value(m_pre_pt->data, m_pre->data);
+            wa_bst_remove_value_t(m_pre_pt, m_pre);
+        }
+    }
+    return 1;
+}
+
+
+int wa_bst_remove_value_t(t_node pre, t_node node)
+{
+    if(!pre || !node)return 0;
+    if(!node->left && !node->right)
+    {
+        if(pre->left == node)destory_treenode(&pre->left);
+        else destory_treenode(&pre->right);
+        return 1;
+    }
+    else if(node->left && node->right)
+    {
+        //中序遍历node的前驱
+        t_node m_pre = node->left;
+        //m_pre的父节点
+        t_node m_pre_pt = node;
+        while(m_pre)
+        {
+            if(!m_pre->right)break;
+            m_pre_pt = m_pre;
+            m_pre = m_pre->right;
+        }
+        copy_object_value(m_pre_pt->data, m_pre->data);
+        wa_bst_remove_value_t(m_pre_pt, m_pre);
+    }
+    else
+    {
+        if(node->left)
+        {
+            //中序遍历node的前驱
+            t_node m_pre = node->left;
+            //m_pre的父节点
+            t_node m_pre_pt = node;
+            while(m_pre)
+            {
+                if(!m_pre->right)break;
+                m_pre_pt = m_pre;
+                m_pre = m_pre->right;
+            }
+            copy_object_value(m_pre_pt->data, m_pre->data);
+            wa_bst_remove_value_t(m_pre_pt, m_pre);
+        }
+        else
+        {
+            //中序遍历node的前驱
+            t_node m_pre = node->right;
+            //m_pre的父节点
+            t_node m_pre_pt = node;
+            while(m_pre)
+            {
+                if(!m_pre->left)break;
+                m_pre_pt = m_pre;
+                m_pre = m_pre->left;
+            }
+            copy_object_value(m_pre_pt->data, m_pre->data);
+            wa_bst_remove_value_t(m_pre_pt, m_pre);
+        }
+    }
+    return 1;
+}
+
+
+int wa_bst_insert_arr(wa_tree tr, int* arr, int size)
+{
+    if(!tr)return 0;
+    int i = 0;
+    while(i < size)
+    {
+        wa_bst_insert(tr, arr[i++]);
+    }
+    return 1;
+}
+
+
+int wa_bst_insert(wa_tree tr, int value)
+{
+    if(!tr)return 0;
+    if(!tr->root)
+    {
+        tr->root = create_treenode();
+        set_object_int(tr->root->data, value);   
+    }
+    else{
+        t_node move = tr->root;
+        t_node pre = tr->root;
+        while(move)
+        {
+            pre = move;
+            int dt = get_object_int(move->data);
+            if(dt == value)return 0;
+            else if(dt > value)move = move->left;
+            else move = move->right;
+        }
+        if(get_object_int(pre->data) > value)wa_insert_left(tr, pre, INTEGER, &value);
+        else wa_insert_right(tr, pre, INTEGER, &value);
+    }
+      return 1;
+}
 
 
 wa_tree create_watree()
@@ -279,5 +481,140 @@ void wa_add_treenode_char_ptr(wa_tree tr, const char* data)
     wa_add_treenode(tr, STRING, (void*)data);
 }
 
+
+
+
+int wa_bst_non_remove_value_int(wa_tree tr, int value)
+{
+    if(!tr)return 0;
+    t_node move = tr->root;
+    t_node pt = NULL;
+    while(move)
+    {
+        int v = get_object_int(move->data);
+        if(v == value)break;
+        pt = move;
+        if(v > value)move = move->left;
+        else move = move->right;
+    }
+    if(!move)return 0;
+    if(!pt)
+    {
+        return wa_bst_non_remove_root(&tr->root);
+    }
+    else
+    {
+        return wa_bst_non_remove_value_t(pt, move);
+    }
+}
+
+int wa_bst_non_remove_root(t_node_ptr node_ptr)
+{
+    if(!node_ptr || !(*node_ptr))return 0;
+    t_node t = *node_ptr;
+    t_node cur = NULL;
+    if(!t->left && !t->right){ destory_treenode(node_ptr); return 1; }
+    else if(t->left && t->right)
+    {
+        //找到中序遍历中t的前驱
+        cur = t->left;
+        while(cur)
+        {
+            if(!cur->right)break;
+            t = cur;
+            cur = cur->right;
+        }        
+    }
+    else
+    {
+        //只有左子树
+        if(t->left)
+        {
+            cur = t->left;
+            while(cur)
+            {
+                if(!cur->right)break;
+                t = cur;
+                cur = cur->right;
+            }
+        }
+        //只有右子树
+        else
+        {
+            cur = t->right;
+            while(cur)
+            {
+                if(!cur->left)break;
+                t = cur;
+                cur = cur->left;
+            }
+        }
+    }
+    copy_object_value((*node_ptr)->data, cur->data);
+    if(t->left == cur)
+    destory_treenode(&t->left);
+    else
+    destory_treenode(&t->right);
+    return 1;
+}
+
+
+int wa_bst_non_remove_value_t(t_node father, t_node node)
+{
+    if(!father || !node)return 0;
+    t_node cur = NULL;
+    if(!node->left && !node->right)
+    {
+        if(father->left == node)
+        destory_treenode(&father->left);
+        else
+        destory_treenode(&father->right);
+        return 1;
+    }
+    else if(node->left && node->right)
+    {
+        father = node;
+        //找到中序遍历中t的前驱
+        cur = node->left;
+        while(cur)
+        {
+            if(!cur->right)break;
+            father = cur;
+            cur = cur->right;
+        }      
+    }
+    else
+    {
+        father = node;
+        //只有左子树
+        if(father->left)
+        {
+            cur = father->left;
+            while(cur)
+            {
+                if(!cur->right)break;
+                father = cur;
+                cur = cur->right;
+            }
+        }
+        //只有右子树
+        else
+        {
+            cur = father->right;
+            while(cur)
+            {
+                if(!cur->left)break;
+                father = cur;
+                cur = cur->left;
+            }
+        }
+    }
+    copy_object_value(node->data, cur->data);
+    if(father->left == cur)
+    destory_treenode(&father->left);
+    else
+    destory_treenode(&father->right);
+    return 1;
+}
 
 #endif
